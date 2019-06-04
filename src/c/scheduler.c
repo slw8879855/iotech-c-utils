@@ -91,6 +91,7 @@ static void iot_scheduler_thread (void * arg)
       /* Check if the queue is populated */
       if (queue->length > 0)
       {
+        uint64_t time_now;
         /* Get the schedule at the front of the queue */
         iot_schedule_t *current = queue->front;
 
@@ -98,7 +99,7 @@ static void iot_scheduler_thread (void * arg)
         iot_threadpool_add_work (scheduler->threadpool, current->function, current->arg, current->prio_set ? &current->priority : NULL);
 
         /* Recalculate the next start time for the schedule */
-        uint64_t time_now = getTimeAsUInt64 ();
+        time_now = getTimeAsUInt64 ();
         current->start = time_now + current->period;
 
         if (current->repeat != 0)
@@ -277,8 +278,9 @@ static void add_schedule_to_queue (iot_schd_queue_t * queue, iot_schedule_t * sc
   iot_schedule_t * next_schedule = NULL;
   iot_schedule_t * previous_schedule = NULL;
   iot_schedule_t * current_sched = queue->front;
+  uint32_t i;
   
-  for (uint32_t i = 0; i < queue->length; i++)
+  for (i = 0; i < queue->length; i++)
   {
     if (schedule->start < current_sched->start)
     {
@@ -362,8 +364,9 @@ static void remove_schedule_from_queue (iot_schd_queue_t * queue, iot_schedule_t
 static iot_component_t * iot_scheduler_config (iot_container_t * cont, const iot_data_t * map)
 {
   const char * name = iot_data_string_map_get_string (map, "ThreadPool");
+  iot_threadpool_t * pool;
   assert (name);
-  iot_threadpool_t * pool = (iot_threadpool_t*) iot_container_find (cont, name);
+  pool = (iot_threadpool_t*) iot_container_find (cont, name);
   assert (pool);
   return (iot_component_t*) iot_scheduler_alloc (pool);
 }

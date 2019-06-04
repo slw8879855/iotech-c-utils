@@ -35,8 +35,8 @@ struct iot_container_t
 
 iot_container_t * iot_container_alloc (iot_container_config_load_fn_t loader)
 {
-  assert (loader);
   iot_container_t * cont = calloc (1, sizeof (*cont));
+  assert (loader && cont);
   cont->components = calloc (IOT_COMPONENT_DELTA, sizeof (iot_component_holder_t));
   cont->ccount = 0;
   cont->csize = IOT_COMPONENT_DELTA;
@@ -60,9 +60,9 @@ bool iot_container_init (iot_container_t * cont, const char * name)
 {
   bool ret = true;
   const char * config = (cont->loader) (name);
-  assert (config);
   iot_data_t * map = iot_data_from_json (config);
   iot_data_map_iter_t iter;
+  assert (config);
   iot_data_map_iter (map, &iter);
   while (iot_data_map_iter_next (&iter))
   {
@@ -117,8 +117,9 @@ void iot_container_free (iot_container_t * cont)
 bool iot_container_start (iot_container_t * cont)
 {
   bool ret = true;
+  uint32_t i;
   pthread_rwlock_rdlock (&cont->lock);
-  for (uint32_t i = 0; i < cont->ccount; i++) // Start in declaration order (dependents first)
+  for (i = 0; i < cont->ccount; i++) // Start in declaration order (dependents first)
   {
     iot_component_t * comp = cont->components[i]->component;
     ret = ret && (comp->start_fn) (comp);
@@ -129,8 +130,9 @@ bool iot_container_start (iot_container_t * cont)
 
 void iot_container_stop (iot_container_t * cont)
 {
+  int32_t i;
   pthread_rwlock_rdlock (&cont->lock);
-  for (int32_t i = cont->ccount - 1; i >= 0; i--) // Stop in reverse of declaration order (dependents last)
+  for (i = cont->ccount - 1; i >= 0; i--) // Stop in reverse of declaration order (dependents last)
   {
     iot_component_t * comp = cont->components[i]->component;
     (comp->stop_fn) (comp);
@@ -140,8 +142,8 @@ void iot_container_stop (iot_container_t * cont)
 
 void iot_container_add_factory (iot_container_t * cont, const iot_component_factory_t * factory)
 {
-  assert (cont && factory);
   iot_factory_holder_t * holder = malloc (sizeof (*holder));
+  assert (cont && factory && holder);
   holder->factory = factory;
   pthread_rwlock_wrlock (&cont->lock);
   holder->next = cont->factories;
@@ -154,8 +156,9 @@ iot_component_t * iot_container_find (iot_container_t * cont, const char * name)
   iot_component_t * comp = NULL;
   if (name && (name[0] != '\0'))
   {
+    uint32_t i;
     pthread_rwlock_rdlock (&cont->lock);
-    for (uint32_t i = 0; i < cont->ccount; i++)
+    for (i = 0; i < cont->ccount; i++)
     {
       if (strcmp (cont->components[i]->name, name) == 0)
       {

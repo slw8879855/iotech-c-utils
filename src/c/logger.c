@@ -122,25 +122,27 @@ static time_t time (time_t *t)
 
 static void iot_logger_log (iot_logger_t *logger, iot_loglevel_t l, const char *fmt, va_list ap)
 {
+  char str [1024];
+  bool ok = false;
+  time_t created = time (NULL);
+
   if (l < logger->level)
   {
     return;
   }
-
-  char str [1024];
-  bool ok = false;
-  time_t created = time (NULL);
 
   vsnprintf (str, sizeof (str), fmt, ap);
 
   // TODO: Queue this log message and signal the processing thread
 
   pthread_mutex_lock (&logger->lock);
-  iot_logger_list * iter = logger->loggers;
-  while (iter)
   {
-    ok |= iter->fn (iter->dest, logger->subsystem, l, created, str);
-    iter = iter->next;
+    iot_logger_list * iter = logger->loggers;
+    while (iter)
+    {
+      ok |= iter->fn (iter->dest, logger->subsystem, l, created, str);
+      iter = iter->next;
+    }
   }
   pthread_mutex_unlock (&logger->lock);
 
@@ -204,12 +206,12 @@ void iot_logger_stop (iot_logger_t * logger)
 
 void iot_logger_add (iot_logger_t *logger, iot_log_function_t fn, const char *destination)
 {
+  iot_logger_list * addthis = malloc (sizeof (*addthis));
   if (logger == iot_log_default ())
   {
     iot_log_error (logger, "Request to add plugin to default logger - ignored");
     return;
   }
-  iot_logger_list * addthis = malloc (sizeof (*addthis));
   addthis->dest = iot_strdup (destination);
   addthis->fn = fn;
   pthread_mutex_lock (&logger->lock);
@@ -221,17 +223,19 @@ void iot_logger_add (iot_logger_t *logger, iot_log_function_t fn, const char *de
 void iot_logger_remove (iot_logger_t *logger, iot_log_function_t fn, const char *destination)
 {
   pthread_mutex_lock (&logger->lock);
-  iot_logger_list **iter = &logger->loggers;
-  while (*iter)
   {
-    if ((*iter)->fn == fn && strcmp ((*iter)->dest, destination) == 0)
+    iot_logger_list **iter = &logger->loggers;
+    while (*iter)
     {
-      iot_logger_list *tmp = *iter;
-      *iter = (*iter)->next;
-      free (tmp);
-      break;
+      if ((*iter)->fn == fn && strcmp ((*iter)->dest, destination) == 0)
+      {
+        iot_logger_list *tmp = *iter;
+        *iter = (*iter)->next;
+        free (tmp);
+        break;
+      }
+      iter = &((*iter)->next);
     }
-    iter = &((*iter)->next);
   }
   pthread_mutex_unlock (&logger->lock);
 }

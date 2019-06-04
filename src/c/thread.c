@@ -112,11 +112,13 @@ bool iot_thread_current_set_priority (int prio)
 
 void iot_mutex_init (pthread_mutex_t * mutex)
 {
-  assert (mutex);
   pthread_mutexattr_t attr;
+  assert (mutex);
   pthread_mutexattr_init (&attr);
 #ifndef __ZEPHYR__
+#if GCC_VERSION != 29600
   pthread_mutexattr_setprotocol (&attr, PTHREAD_PRIO_INHERIT);
+#endif
 #endif
   pthread_mutex_init (mutex, &attr);
   pthread_mutexattr_destroy (&attr);

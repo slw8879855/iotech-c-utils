@@ -95,12 +95,13 @@ static iot_data_t * iot_data_all_from_json (iot_json_tok_t ** tokens, const char
 
 static void * iot_data_factory_alloc (void)
 {
+  iot_data_t * data;
 #ifdef IOT_HAS_SPINLOCK
   pthread_spin_lock (&iot_data_slock);
 #else
   pthread_mutex_lock (&iot_data_mutex);
 #endif
-  iot_data_t * data = iot_data_cache;
+  data = iot_data_cache;
   if (data)
   {
     iot_data_cache = data->next;
@@ -212,8 +213,8 @@ const char * iot_data_type_name (const iot_data_t * data)
 
 iot_data_t * iot_data_alloc_map (iot_data_type_t key_type)
 {
-  assert (key_type < IOT_DATA_MAP);
   iot_data_map_t * map = iot_data_factory_alloc ();
+  assert (key_type < IOT_DATA_MAP);
   map->base.type = IOT_DATA_MAP;
   map->key_type = key_type;
   return (iot_data_t*) map;
@@ -221,8 +222,8 @@ iot_data_t * iot_data_alloc_map (iot_data_type_t key_type)
 
 iot_data_t * iot_data_alloc_array (uint32_t size)
 {
-  assert (size);
   iot_data_array_t * array = iot_data_factory_alloc ();
+  assert (size);
   array->base.type = IOT_DATA_ARRAY;
   array->size = size;
   array->values = calloc (size, sizeof (iot_data_t*));
@@ -266,7 +267,8 @@ void iot_data_free (iot_data_t * data)
       case IOT_DATA_ARRAY:
       {
         iot_data_array_t * array = (iot_data_array_t*) data;
-        for (uint32_t i = 0; i < array->size; i++)
+        uint32_t i;
+        for (i = 0; i < array->size; i++)
         {
           iot_data_free (array->values[i]);
         }
@@ -358,16 +360,16 @@ iot_data_t * iot_data_alloc_bool (bool val)
 
 iot_data_t * iot_data_alloc_string (const char * val, bool copy)
 {
-  assert (val);
   iot_data_value_t * data = iot_data_value_alloc (IOT_DATA_STRING, copy);
+  assert (val);
   data->value.str = copy ? iot_strdup (val) : (char*) val;
   return (iot_data_t*) data;
 }
 
 iot_data_t * iot_data_alloc_blob (uint8_t * data, uint32_t size, bool copy)
 {
-  assert (data && size);
   iot_data_blob_t * blob = iot_data_factory_alloc ();
+  assert (data && size);
   blob->base.type = IOT_DATA_BLOB;
   blob->size = size;
   blob->base.release = copy;
@@ -485,11 +487,12 @@ void iot_data_string_map_add (iot_data_t * map, const char * key, iot_data_t * v
 void iot_data_map_add (iot_data_t * map, iot_data_t * key, iot_data_t * val)
 {
   iot_data_map_t * mp = (iot_data_map_t*) map;
+  iot_data_pair_t * pair;
 
   assert (mp && (mp->base.type == IOT_DATA_MAP));
   assert (key && key->type == mp->key_type);
 
-  iot_data_pair_t * pair = iot_data_map_find (mp, key);
+  pair = iot_data_map_find (mp, key);
   if (pair)
   {
     iot_data_free (pair->value);
@@ -509,16 +512,19 @@ void iot_data_map_add (iot_data_t * map, iot_data_t * key, iot_data_t * val)
 const iot_data_t * iot_data_map_get (const iot_data_t * map, const iot_data_t * key)
 {
   iot_data_map_t * mp = (iot_data_map_t*) map;
+  iot_data_pair_t * pair;
   assert (mp && key && (mp->base.type == IOT_DATA_MAP));
-  iot_data_pair_t * pair = iot_data_map_find (mp, key);
+  pair = iot_data_map_find (mp, key);
   return pair ? pair->value : NULL;
 }
 
 const iot_data_t * iot_data_string_map_get (const iot_data_t * map, const char * key)
 {
+  iot_data_t * dkey;
+  const iot_data_t * value;
   assert (map && key);
-  iot_data_t * dkey = iot_data_alloc_string (key, false);
-  const iot_data_t * value = iot_data_map_get (map, dkey);
+  dkey = iot_data_alloc_string (key, false);
+  value = iot_data_map_get (map, dkey);
   iot_data_free (dkey);
   return value;
 }
@@ -538,10 +544,11 @@ iot_data_type_t iot_data_map_key_type (const iot_data_t * map)
 void iot_data_array_add (iot_data_t * array, uint32_t index, iot_data_t * val)
 {
   iot_data_array_t * arr = (iot_data_array_t*) array;
+  iot_data_t * element;
   assert (array && (array->type == IOT_DATA_ARRAY));
   assert (val);
   assert (index < arr->size);
-  iot_data_t * element = arr->values[index];
+  element = arr->values[index];
   iot_data_free (element);
   arr->values[index] = val;
 
@@ -816,6 +823,8 @@ iot_data_t * iot_data_from_json (const char * json)
   int32_t used;
   const char * ptr = json;
   uint32_t count = 1;
+  iot_json_tok_t * tokens;
+  iot_json_tok_t * tptr;
 
   // Approximate token count
   while (*ptr != '\0')
@@ -828,8 +837,8 @@ iot_data_t * iot_data_from_json (const char * json)
     }
     ptr++;
   }
-  iot_json_tok_t * tokens = calloc (1, sizeof (*tokens) * count);
-  iot_json_tok_t * tptr = tokens;
+  tokens = calloc (1, sizeof (*tokens) * count);
+  tptr = tokens;
 
   iot_json_init (&parser);
   used = iot_json_parse (&parser, json, strlen (json), tptr, count);
