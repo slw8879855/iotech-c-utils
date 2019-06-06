@@ -631,7 +631,7 @@ const char * iot_data_array_iter_string (const iot_data_array_iter_t * iter)
   return (iter->index <= iter->array->size) ? iot_data_string (iter->array->values[iter->index - 1]) : NULL;
 }
 
-static size_t repr_size (char c)
+static size_t iot_data_repr_size (char c)
 {
   size_t result = 1;
   switch (c)
@@ -666,7 +666,7 @@ static void iot_data_strcat_escape (iot_string_holder_t * holder, const char * a
     adj_len = 0;
     for (i = 0; i < len; i++)
     {
-      adj_len += repr_size (add[i]);
+      adj_len += iot_data_repr_size (add[i]);
     }
   }
   if (holder->free < adj_len)
@@ -686,7 +686,7 @@ static void iot_data_strcat_escape (iot_string_holder_t * holder, const char * a
     for (i = 0; i < len; i++)
     {
       char c = add[i];
-      switch (repr_size (c))
+      switch (iot_data_repr_size (c))
       {
         case 1:
         {
