@@ -714,7 +714,7 @@ static void iot_data_strcat_escape (iot_string_holder_t * holder, const char * a
           *ptr++ = 'u';
           *ptr++ = '0';
           *ptr++ = '0';
-          *ptr++ = (c & 0x10) ? '0' : '1';
+          *ptr++ = (c & 0x10) ? '1' : '0';
           *ptr++ = hex[c & 0xf];
           break;
         }
