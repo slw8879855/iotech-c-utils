@@ -695,7 +695,7 @@ static void iot_data_strcat_escape (iot_string_holder_t * holder, const char * a
         }
         case 2:
         {
-          *ptr++ = '\'';
+          *ptr++ = '\\';
           switch (c)
           {
             case '\"': *ptr++ = '\"'; break;
