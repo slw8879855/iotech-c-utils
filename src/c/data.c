@@ -700,11 +700,11 @@ static void iot_data_strcat_escape (iot_string_holder_t * holder, const char * a
           {
             case '\"': *ptr++ = '\"'; break;
             case '\\': *ptr++ = '\\'; break;
-            case '\b': *ptr++ = '\b'; break;
-            case '\f': *ptr++ = '\f'; break;
-            case '\n': *ptr++ = '\n'; break;
-            case '\r': *ptr++ = '\r'; break;
-            case '\t': *ptr++ = '\t'; break;
+            case '\b': *ptr++ = 'b'; break;
+            case '\f': *ptr++ = 'f'; break;
+            case '\n': *ptr++ = 'n'; break;
+            case '\r': *ptr++ = 'r'; break;
+            case '\t': *ptr++ = 't'; break;
           }
           break;
         }
